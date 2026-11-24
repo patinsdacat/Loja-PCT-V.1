@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Loja Clube</title>
+
+  <!-- Instalável como PWA: ícone próprio, nome próprio, fullscreen -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2c3e50">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Loja Clube">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" href="icon-192.png">
+
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #2c3e50;
+      overflow: hidden;
+    }
+
+    iframe {
+      border: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Abre a loja diretamente (iframes do Apps Script falham no telemóvel por causa dos cookies de 3ª parte) -->
+  <script>
+    var URL_LOJA = 'https://script.google.com/macros/s/AKfycbwNTw2knwRrC7JX7tMOa5ZOZkVGNUF2s8J7RK5deNlfWyoJA-igqF7lmLFNk3bck2AFeA/exec';
+    location.replace(URL_LOJA);
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(function (reg) {
+        // 🔄 AUTO-ATUALIZAÇÃO: se aparecer um service worker novo,
+        // ativa-o imediatamente e recarrega a página uma única vez.
+        reg.addEventListener('updatefound', function () {
+          var novo = reg.installing;
+          if (!novo) return;
+          novo.addEventListener('statechange', function () {
+            if (novo.state === 'installed' && navigator.serviceWorker.controller) {
+              novo.postMessage('SKIP_WAITING');
+            }
+          });
+        });
+        var recarregou = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (!recarregou) { recarregou = true; location.reload(); }
+        });
+        // Verifica atualizações a cada hora também com a app aberta
+        setInterval(function () { reg.update().catch(function () {}); }, 60 * 60 * 1000);
+      }).catch(function () {});
+    }
+  </script>
+</body>
+
+</html>
