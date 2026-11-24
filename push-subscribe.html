@@ -176,10 +176,16 @@
     async function ativar() {
       var btn = document.getElementById('btn-ativar');
       try {
+        // ⚡ 1º passo: pedir permissão IMEDIATAMENTE no toque do botão
+        // (o Chrome Android exige gesto direto — qualquer await antes esvazia o pedido)
+        if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+          await Notification.requestPermission();
+        }
+
         var quem = await obterNif();
         if (btn) { btn.disabled = true; btn.textContent = 'A ativar…'; }
 
-        // 1) Inicia o OneSignal e pede a permissão do sistema
+        // 2) Inicia o OneSignal
         window.OneSignalDeferred = window.OneSignalDeferred || [];
         await new Promise(function (resolve) {
           OneSignalDeferred.push(async function (OneSignal) {
@@ -187,28 +193,28 @@
               appId: ONESIGNAL_APP_ID,
               safari_web_id: 'web.onesignal.auto.1997779e-e1de-41f4-ac74-4543cfbf0412',
               serviceWorkerParam: { scope: '/' },
-              serviceWorkerPath: 'OneSignalSDKWorker.js',
-              promptOptions: { slidedown: { enabled: false } }
+              serviceWorkerPath: 'OneSignalSDKWorker.js'
             });
             resolve();
           });
         });
 
-        // 2) Espera o utilizador aceitar e obtém o ID de subscrição
+        // 3) Espera o utilizador aceitar e obtém o ID de subscrição
         var subscription = null;
         for (var tent = 0; tent < 30 && !subscription; tent++) {
           await new Promise(function (r) { setTimeout(r, 500); });
           subscription = await OneSignal.User.PushSubscription.id;
         }
-        if (!subscription) { resultado('⏰ Tempo esgotado', 'Não autorizaste as notificações. Recarrega a página e tenta de novo.'); return; }
-
-        // Pedido de permissão do sistema (após init, com SDK carregado)
-        try {
-          var perm = await OneSignal.Notifications.permission;
-          if (perm !== true) {
-            await OneSignal.Notifications.requestPermission();
+        if (!subscription) {
+          var pFinal = null;
+          try { pFinal = await OneSignal.Notifications.permission; } catch (e) { }
+          if (pFinal === false) {
+            resultado('🚫 Permissão negada', 'As notificações foram bloqueadas neste navegador. Vês ao lado do endereço o ícone 🔒 — toca nele e ativa "Notificações".');
+          } else {
+            resultado('⏰ Tempo esgotado', 'Recarrega a página e tenta de novo.');
           }
-        } catch (e) { /* alguns browsers mostram o pedido ao registar */ }
+          return;
+        }
 
         // 3) Liga a subscrição ao ID interno do utilizador (external_id)
         await OneSignal.login(String(quem.userId || quem.nif));
