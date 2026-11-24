@@ -6,7 +6,7 @@
 var CACHE = 'loja-pct-v3';
 
 // 🔧 SUBSTITUI pelo teu ONE SIGNAL APP ID (Settings → Keys & IDs)
-var ONESIGNAL_APP_ID = 'COLA_AQUI_O_APP_ID';
+var ONESIGNAL_APP_ID = '085895b5-1328-46ec-87a2-175347e2a333';
 
 self.addEventListener('install', function (e) {
   self.skipWaiting(); // ativa a versão nova imediatamente
