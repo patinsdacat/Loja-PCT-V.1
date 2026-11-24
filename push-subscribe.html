@@ -177,9 +177,22 @@
       var btn = document.getElementById('btn-ativar');
       try {
         // ⚡ 1º passo: pedir permissão IMEDIATAMENTE no toque do botão
-        // (o Chrome Android exige gesto direto — qualquer await antes esvazia o pedido)
-        if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-          await Notification.requestPermission();
+        if (typeof Notification !== 'undefined') {
+          var permAntes = Notification.permission;
+          if (permAntes === 'denied') {
+            resultado('🚫 Permissão bloqueada', 'O Chrome gravou "Bloquear" para este site. Toca no 🔒 ao lado do endereço → Notificações → Permitir, e recarrega.');
+            return;
+          }
+          if (permAntes === 'default') {
+            var p = await Notification.requestPermission();
+            if (p !== 'granted') {
+              resultado('⏸️ Permissão não dada', 'Escolhe "Permitir" no popup do Chrome (não "Bloquear"). Recarrega e tenta de novo.');
+              return;
+            }
+          }
+        } else {
+          resultado('❌ Navegador sem suporte', 'Este browser não suporta notificações. Usa o Chrome.');
+          return;
         }
 
         var quem = await obterNif();
@@ -206,13 +219,9 @@
           subscription = await OneSignal.User.PushSubscription.id;
         }
         if (!subscription) {
-          var pFinal = null;
-          try { pFinal = await OneSignal.Notifications.permission; } catch (e) { }
-          if (pFinal === false) {
-            resultado('🚫 Permissão negada', 'As notificações foram bloqueadas neste navegador. Vês ao lado do endereço o ícone 🔒 — toca nele e ativa "Notificações".');
-          } else {
-            resultado('⏰ Tempo esgotado', 'Recarrega a página e tenta de novo.');
-          }
+          var diag = 'perm=' + (typeof Notification !== 'undefined' ? Notification.permission : 'n/a');
+          try { diag += ' sw=' + (navigator.serviceWorker && navigator.serviceWorker.controller ? 'ok' : 'sem'); } catch (e) {}
+          resultado('⏰ Subscrição não completou', 'Diagnóstico: ' + diag + '. Recarrega a página e tenta de novo.');
           return;
         }
 
