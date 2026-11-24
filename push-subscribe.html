@@ -176,23 +176,25 @@
     async function ativar() {
       var btn = document.getElementById('btn-ativar');
       try {
-        // ⚡ 1º passo: pedir permissão IMEDIATAMENTE no toque do botão
+        // ⚡ 1º passo: pedir permissão com TIMEOUT — nunca pode ficar preso
         if (typeof Notification !== 'undefined') {
-          var permAntes = Notification.permission;
-          if (permAntes === 'denied') {
-            resultado('🚫 Permissão bloqueada', 'O Chrome gravou "Bloquear" para este site. Toca no 🔒 ao lado do endereço → Notificações → Permitir, e recarrega.');
+          if (Notification.permission === 'denied') {
+            resultado('🚫 Permissão bloqueada', 'Toca no 🔒 ao lado do endereço → Notificações → Permitir → recarrega.');
             return;
           }
-          if (permAntes === 'default') {
-            var p = await Notification.requestPermission();
-            if (p !== 'granted') {
-              resultado('⏸️ Permissão não dada', 'Escolhe "Permitir" no popup do Chrome (não "Bloquear"). Recarrega e tenta de novo.');
+          if (Notification.permission === 'default') {
+            var pRes = await Promise.race([
+              Notification.requestPermission(),
+              new Promise(function (r) { setTimeout(function () { r('timeout'); }, 4000); })
+            ]);
+            if (pRes === 'timeout') {
+              // O Chrome engoliu o pedido — avisa e segue para o OneSignal (que pode pedir à sua maneira)
+              try { await OneSignal.Notifications.requestPermission(); } catch (e) {}
+            } else if (pRes !== 'granted') {
+              resultado('⏸️ Permissão não dada', 'Toca "Permitir" no popup do Chrome. Recarrega e tenta de novo.');
               return;
             }
           }
-        } else {
-          resultado('❌ Navegador sem suporte', 'Este browser não suporta notificações. Usa o Chrome.');
-          return;
         }
 
         var quem = await obterNif();
