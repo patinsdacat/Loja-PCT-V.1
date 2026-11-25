@@ -14,44 +14,63 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" href="icon-192.png">
   <style>
-    * { box-sizing: border-box; }
+    html,
     body {
-      margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
-      background: #2c3e50; font-family: Arial, sans-serif; color: #fff; padding: 20px;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #2c3e50;
+      overflow: hidden;
     }
-    .card {
-      max-width: 420px; width: 100%; background: #1a1a1a; border: 2px solid #FFD700;
-      border-radius: 14px; padding: 32px 24px; text-align: center;
+
+    iframe {
+      border: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
     }
-    .card img { width: 84px; height: 84px; border-radius: 18px; margin-bottom: 16px; }
-    h1 { color: #FFD700; font-size: 1.3em; margin: 0 0 12px; }
-    p { color: #ccc; line-height: 1.6; font-size: 0.95em; margin: 0 0 20px; }
-    button, a.btn-abrir {
-      background: #FFD700; border: 0; color: #000; font-weight: 800; font-size: 1.05em;
-      padding: 16px 32px; border-radius: 10px; width: 100%; cursor: pointer;
-      display: block; text-decoration: none; margin-bottom: 12px;
+
+    #aviso-iframe {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #1a1a1a;
+      border: 2px solid #FFD700;
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      max-width: 320px;
     }
-    a.btn-abrir:hover { filter: brightness(0.95); }
-    #btn-instalar { display: none; background: #22c55e; }
-    .nota { font-size: 0.8em; color: #888; margin-top: 8px; }
+
+    #aviso-iframe a {
+      color: #FFD700;
+    }
   </style>
 </head>
 
 <body>
-  <div class="card">
-    <img src="icon-192.png" alt="PCT">
-    <h1>🏆 Loja — Patinagem Clube de Tavira</h1>
+  <iframe id="loja-iframe"
+    src="https://script.google.com/macros/s/AKfycbwNTw2knwRrC7JX7tMOa5ZOZkVGNUF2s8J7RK5deNlfWyoJA-igqF7lmLFNk3bck2AFeA/exec"></iframe>
 
-    <a class="btn-abrir" href="https://script.google.com/macros/s/AKfycbwNTw2knwRrC7JX7tMOa5ZOZkVGNUF2s8J7RK5deNlfWyoJA-igqF7lmLFNk3bck2AFeA/exec"
-       target="_top">🛍️ Abrir a Loja</a>
-
-    <button id="btn-instalar" onclick="instalarApp()">📲 Instalar a App</button>
-
-    <p class="nota">
-      Instala no telemóvel para receberes as notificações (encomenda, pagamento, levantamento).
-      No iPhone: botão Partilhar → "Adicionar ao Ecrã Principal".
-    </p>
+  <div id="aviso-iframe">
+    <p>⚠️ A loja não abriu dentro da app.</p>
+    <p style="font-size:0.85em;color:#ccc">Toca abaixo para abrir no navegador:</p>
+    <a href="https://script.google.com/macros/s/AKfycbwNTw2knwRrC7JX7tMOa5ZOZkVGNUF2s8J7RK5deNlfWyoJA-igqF7lmLFNk3bck2AFeA/exec"
+      target="_top" style="color:#FFD700;font-weight:800">🛍️ Abrir a Loja</a>
   </div>
+
+  <script>
+    // Se o iframe não carregar em 8 segundos (cookies bloqueados), mostra o aviso
+    var carregou = false;
+    document.getElementById('loja-iframe').addEventListener('load', function () { carregou = true; });
+    setTimeout(function () {
+      if (!carregou) document.getElementById('aviso-iframe').style.display = 'block';
+    }, 8000);
+  </script>
 
   <script>
     if ('serviceWorker' in navigator) {
@@ -70,22 +89,24 @@
         navigator.serviceWorker.addEventListener('controllerchange', function () {
           if (!recarregou) { recarregou = true; location.reload(); }
         });
-        setInterval(function () { reg.update().catch(function () {}); }, 60 * 60 * 1000);
-      }).catch(function () {});
+        setInterval(function () { reg.update().catch(function () { }); }, 60 * 60 * 1000);
+      }).catch(function () { });
     }
 
-    // 📲 PWA: mostra o botão de instalação quando o navegador o permite
+    // 📲 PWA: botão flutuante de instalação quando o navegador o permite
     var promptInstalar = null;
     window.addEventListener('beforeinstallprompt', function (e) {
       e.preventDefault();
       promptInstalar = e;
-      document.getElementById('btn-instalar').style.display = 'block';
+      var btn = document.createElement('button');
+      btn.textContent = '📲 Instalar no ecrã principal';
+      btn.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99;background:#22c55e;border:0;color:#000;font-weight:800;font-size:0.95em;padding:12px 24px;border-radius:24px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.4)';
+      btn.onclick = function () {
+        promptInstalar.prompt();
+        promptInstalar.userChoice.then(function () { btn.remove(); promptInstalar = null; });
+      };
+      document.body.appendChild(btn);
     });
-    function instalarApp() {
-      if (!promptInstalar) return;
-      promptInstalar.prompt();
-      promptInstalar.userChoice.then(function () { promptInstalar = null; });
-    }
   </script>
 </body>
 
